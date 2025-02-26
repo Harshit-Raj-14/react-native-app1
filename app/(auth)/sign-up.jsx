@@ -1,5 +1,3 @@
-// app/signup/index.js
-
 import React, { useState, useRef } from 'react';
 import {
   View,
@@ -11,19 +9,29 @@ import {
   StyleSheet,
   Pressable,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { router } from 'expo-router';
+import { useSignUp } from '@clerk/clerk-expo';
 import { baseStyles, colors } from '../styles/authStyles';
 
 export default function Signup() {
-  const router = useRouter();
+  const { isLoaded, signUp, setActive } = useSignUp();
+  
+  // State for UI
   const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
   const [agreed, setAgreed] = useState(false);
   const animatedValue = useRef(new Animated.Value(1)).current;
-
+  
+  // State for Clerk auth
+  const [emailAddress, setEmailAddress] = useState('');
+  const [password, setPassword] = useState('');
+  const [pendingVerification, setPendingVerification] = useState(false);
+  const [code, setCode] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  
   const handlePressIn = () => {
     Animated.spring(animatedValue, {
       toValue: 0.95,
@@ -38,11 +46,119 @@ export default function Signup() {
     }).start();
   };
 
-  const handleSignup = () => {
-    // Add your signup logic here
-    console.log('Signup attempted with:', { email, password, agreed });
+  // Handle submission of sign-up form
+  const onSignUpPress = async () => {
+    if (!isLoaded) return;
+    if (!agreed) {
+      setError('Please agree to the Terms & Conditions');
+      return;
+    }
+    
+    setError('');
+    setIsSubmitting(true);
+    
+    try {
+      await signUp.create({
+        emailAddress,
+        password,
+      });
+      
+      // Send user an email with verification code
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      
+      // Set 'pendingVerification' to true to display verification form
+      setPendingVerification(true);
+    } catch (err) {
+      console.error(JSON.stringify(err, null, 2));
+      setError(err.errors?.[0]?.message || 'Something went wrong. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
+  // Handle submission of verification form
+  const onVerifyPress = async () => {
+    if (!isLoaded) return;
+    setIsSubmitting(true);
+    setError('');
+    
+    try {
+      // Use the code the user provided to attempt verification
+      const signUpAttempt = await signUp.attemptEmailAddressVerification({
+        code,
+      });
+      
+      // If verification was complete, set session active and redirect
+      if (signUpAttempt.status === 'complete') {
+        await setActive({ session: signUpAttempt.createdSessionId });
+        router.replace('../(root)/(tabs)/home');
+      } else {
+        setError('Verification failed. Please try again.');
+      }
+    } catch (err) {
+      console.error(JSON.stringify(err, null, 2));
+      setError(err.errors?.[0]?.message || 'Verification failed. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Verification screen
+  if (pendingVerification) {
+    return (
+      <SafeAreaView style={baseStyles.container}>
+        <StatusBar barStyle="light-content" />
+        
+        <View style={baseStyles.header}>
+          <Text style={baseStyles.title}>Verify Your Email</Text>
+          <Text style={baseStyles.subtitle}>Enter the code sent to {emailAddress}</Text>
+        </View>
+
+        <View style={baseStyles.form}>
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+          
+          <View style={baseStyles.inputContainer}>
+            <TextInput
+              placeholder="Verification Code"
+              placeholderTextColor={colors.gray}
+              style={baseStyles.input}
+              keyboardType="number-pad"
+              value={code}
+              onChangeText={setCode}
+              autoFocus
+            />
+          </View>
+
+          <TouchableOpacity 
+            style={[styles.signupButton, isSubmitting && styles.disabledButton]}
+            onPress={onVerifyPress}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color={colors.black} />
+            ) : (
+              <Text style={styles.signupButtonText}>VERIFY</Text>
+            )}
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.resendButton}
+            onPress={async () => {
+              try {
+                await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+              } catch (err) {
+                setError('Failed to resend code. Please try again.');
+              }
+            }}
+          >
+            <Text style={styles.resendButtonText}>Resend Code</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Sign up screen
   return (
     <SafeAreaView style={baseStyles.container}>
       <StatusBar barStyle="light-content" />
@@ -53,6 +169,8 @@ export default function Signup() {
       </View>
 
       <View style={baseStyles.form}>
+        {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        
         <View style={baseStyles.inputContainer}>
           <TextInput
             placeholder="Email"
@@ -60,8 +178,8 @@ export default function Signup() {
             style={baseStyles.input}
             keyboardType="email-address"
             autoCapitalize="none"
-            value={email}
-            onChangeText={setEmail}
+            value={emailAddress}
+            onChangeText={setEmailAddress}
           />
         </View>
 
@@ -102,10 +220,15 @@ export default function Signup() {
         </View>
 
         <TouchableOpacity 
-          style={styles.signupButton}
-          onPress={handleSignup}
+          style={[styles.signupButton, isSubmitting && styles.disabledButton]}
+          onPress={onSignUpPress}
+          disabled={isSubmitting}
         >
-          <Text style={styles.signupButtonText}>SIGN UP</Text>
+          {isSubmitting ? (
+            <ActivityIndicator color={colors.black} />
+          ) : (
+            <Text style={styles.signupButtonText}>SIGN UP</Text>
+          )}
         </TouchableOpacity>
 
         <View style={baseStyles.dividerContainer}>
@@ -135,7 +258,7 @@ export default function Signup() {
               ]}
               onPressIn={handlePressIn}
               onPressOut={handlePressOut}
-              onPress={() => router.push('/sign-in')}
+              onPress={() => router.push('/(auth)/sign-in')}
               android_ripple={{ color: colors.gray }}
             >
               <Text style={styles.loginButtonText}>LOG IN</Text>
@@ -176,6 +299,11 @@ const styles = StyleSheet.create({
     padding: 15,
     alignItems: 'center',
     marginBottom: 15,
+    height: 50,
+    justifyContent: 'center',
+  },
+  disabledButton: {
+    opacity: 0.7,
   },
   signupButtonText: {
     color: colors.black,
@@ -211,4 +339,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  errorText: {
+    color: '#ff6b6b',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  resendButton: {
+    alignItems: 'center',
+    marginTop: 15,
+  },
+  resendButtonText: {
+    color: colors.accent,
+    fontSize: 14,
+  }
 });
