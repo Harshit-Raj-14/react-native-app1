@@ -1,0 +1,126 @@
+// user profile
+Table users {
+  id integer [primary key]
+  username varchar [unique, not null]
+  email varchar [unique, not null]
+  password_hash varchar [not null]
+  profile_image varchar
+  frontierX_public_wallet varchar [unique]
+  frontierX_connected_wallet varchar
+  is_mfa_enabled boolean [default: false]
+  created_at timestamp 
+}
+
+// friends list
+Table friends {
+  id integer [primary key]
+  user_id integer [not null]
+  friend_id integer [not null]
+  created_at timestamp 
+}
+// Adding friend request feature
+// receiver_id integer [not null, foreign key -> users.id]
+// status varchar [default: 'pending', check: in ('pending', 'accepted', 'rejected')]
+
+Table referrals {
+  id integer [primary key]
+  user_id integer [not null]
+  referral_code varchar [unique, not null]
+  referred_user_id integer
+  created_at timestamp 
+}
+
+Table p2pTrades {
+  id integer [primary key]                      
+  sender_id integer 
+  receiver_id integer 
+  sender_wallet_address varchar [not null]      
+  receiver_wallet_address varchar [not null]    
+  sender_crypto_type varchar [not null]         
+  receiver_crypto_type varchar [not null]       
+  sender_token_amount decimal [not null]        
+  receiver_token_amount decimal [not null]               
+  status varchar
+  created_at timestamp     
+}
+
+Table dexTrades {
+  id integer [primary key]                      
+  user_id integer 
+  user_wallet_address varchar [not null]          
+  from_crypto_type varchar [not null]         
+  to_crypto_type varchar [not null]       
+  token_amount decimal [not null]           
+  status varchar
+  created_at timestamp     
+}
+
+Table trade_history {
+  id integer [primary key]
+  user_id integer
+  trade_id integer
+  trade_type varchar
+  created_at timestamp 
+}
+
+Table wallet_balances {
+  id integer [primary key]
+  user_id integer
+  token_symbol varchar [not null]               
+  token_address varchar [not null]              
+  token_balance decimal [not null]        
+  price_per_token decimal [not null]  
+}
+
+Table feedback {
+  id integer [primary key]
+  user_id integer
+  feedback_text text
+  stars integer
+  created_at timestamp 
+}
+
+// Chat sessions (Each session represents a unique AI-agent interaction)
+Table chat_sessions {
+  id integer [primary key]  //session_id
+  user_id integer [not null]
+  action_type varchar [not null] // Type of AI action requested (e.g., 'trade', 'see friends')
+  session_status varchar //[default: 'active', check: in ('active', 'completed', 'archived')]
+  created_at timestamp
+}
+
+// Chat messages (Stores messages linked to a session)
+Table chat_messages {
+  id integer [primary key]
+  session_id integer [not null]
+  user_id integer [not null]
+  message_text text [not null]
+  message_type varchar //[not null, check: in ('user', 'ai')]
+  created_at timestamp
+}
+
+// Foreign Key References
+Ref: friends.user_id > users.id
+Ref: friends.friend_id > users.id
+
+Ref: referrals.user_id > users.id
+Ref: referrals.referred_user_id > users.id
+
+Ref: p2pTrades.sender_id > users.id
+Ref: p2pTrades.receiver_id > users.id
+
+Ref: dexTrades.user_id > users.id
+
+Ref: trade_history.trade_id > p2pTrades.id
+Ref: trade_history.trade_id > dexTrades.id
+Ref: trade_history.user_id > users.id
+
+Ref: wallet_balances.user_id > users.id
+
+Ref: feedback.user_id > users.id
+
+Ref: chat_sessions.user_id > users.id
+
+Ref: chat_messages.session_id > chat_sessions.id
+Ref: chat_messages.user_id > users.id
+
