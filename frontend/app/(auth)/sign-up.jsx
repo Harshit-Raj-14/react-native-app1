@@ -91,7 +91,7 @@ export default function Signup() {
       // If verification was complete, set session active and redirect
       if (signUpAttempt.status === 'complete') {
         await setActive({ session: signUpAttempt.createdSessionId });
-        router.replace('../(root)/(tabs)/home');
+        router.replace('./username');
       } else {
         setError('Verification failed. Please try again.');
       }

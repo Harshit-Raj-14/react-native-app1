@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1741020850788,
+      "tag": "0000_thankful_dark_beast",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1741081958013,
+      "tag": "0001_complex_vengeance",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1741082358241,
+      "tag": "0002_tidy_veda",
+      "breakpoints": true
+    }
+  ]
+}
