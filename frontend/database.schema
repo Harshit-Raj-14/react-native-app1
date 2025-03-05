@@ -5,9 +5,16 @@ Table users {
   email varchar [unique, not null]
   password_hash varchar [not null]
   profile_image varchar
-  frontierX_public_wallet varchar [unique]
-  frontierX_connected_wallet varchar
   is_mfa_enabled boolean [default: false]
+  created_at timestamp 
+}
+
+Table wallets {
+  id integer [primary key]
+  user_id integer [not null]
+  wallet_address varchar [unique, not null]
+  public_address varchar [unique, not null]
+  wallet_type varchar [not null] // e.g., "phantom", "metamask", etc.
   created_at timestamp 
 }
 
@@ -65,11 +72,12 @@ Table trade_history {
 
 Table wallet_balances {
   id integer [primary key]
-  user_id integer
-  token_symbol varchar [not null]               
-  token_address varchar [not null]              
-  token_balance decimal [not null]        
-  price_per_token decimal [not null]  
+  wallet_id integer [not null]
+  token_symbol varchar(10) [not null]    
+  token_address varchar [not null]   
+  token_balance decimal [not null]  
+  price_per_token decimal [not null] 
+  last_updated timestamp 
 }
 
 Table feedback {
@@ -99,6 +107,28 @@ Table chat_messages {
   created_at timestamp
 }
 
+//NFT System
+Table nfts {
+  id integer [primary key]
+  wallet_id integer [not null]
+  nft_contract_address varchar [not null] //Links the NFT to a specific wallet.
+  nft_token_id varchar(100) [not null] 
+  nft_name varchar(255) 
+  nft_image_url varchar 
+  nft_metadata jsonb 
+  acquired_at timestamp
+}
+
+Table nft_transactions {
+  id integer [primary key]
+  nft_id integer [not null]
+  from_wallet varchar [not null] 
+  to_wallet varchar [not null] 
+  price decimal [not null]
+  transaction_hash varchar [not null, unique] // transaction hash of the NFT sale or transfer on the blockchain
+  timestamp timestamp
+}
+
 // Foreign Key References
 Ref: friends.user_id > users.id
 Ref: friends.friend_id > users.id
@@ -115,7 +145,8 @@ Ref: trade_history.trade_id > p2pTrades.id
 Ref: trade_history.trade_id > dexTrades.id
 Ref: trade_history.user_id > users.id
 
-Ref: wallet_balances.user_id > users.id
+Ref: wallets.user_id > users.id
+Ref: wallet_balances.wallet_id > wallets.id
 
 Ref: feedback.user_id > users.id
 
@@ -123,4 +154,9 @@ Ref: chat_sessions.user_id > users.id
 
 Ref: chat_messages.session_id > chat_sessions.id
 Ref: chat_messages.user_id > users.id
+
+Ref: nfts.wallet_id > wallets.id
+Ref: nft_transactions.nft_id > nfts.id
+Ref: nft_transactions.from_wallet > wallets.wallet_address
+Ref: nft_transactions.to_wallet > wallets.wallet_address
 
