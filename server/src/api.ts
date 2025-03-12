@@ -120,37 +120,46 @@ router.get('/users/:username/user-id', async (req: Request, res: Response) => {
 
 
 // POST: Add a new wallet for a user
-router.post('/wallets', async (req: Request, res: Response) => {
+router.post('/', async (req: Request, res: Response) => {
     try {
-        const { user_id, wallet_address, public_address, wallet_type } = req.body;
-
-        // Check if the user exists
-        const userExists = await db.select().from(users).where(eq(users.id, user_id));
-        if (userExists.length === 0) {
-            res.status(404).json({ error: 'User not found' });
-        }
-
-        // Check if wallet_address or public_address already exists
-        const existingWallet = await db.select().from(wallets).where(
-            and(eq(wallets.wallet_address, wallet_address), eq(wallets.public_address, public_address))
-        );
-        if (existingWallet.length > 0) {
-            res.status(409).json({ error: 'Wallet address or public address already exists' });
-        }
-
-        // Insert new wallet record
-        const newWallet = await db.insert(wallets).values({
-            user_id,
-            wallet_address,
-            public_address,
-            wallet_type
-        }).returning();
-
-        res.status(201).json(newWallet[0]);
+      const { user_id, wallet_address, public_address, wallet_type } = req.body;
+      
+      // Validate required fields
+      if (!user_id || !wallet_address || !public_address || !wallet_type) {
+        res.status(400).json({ error: 'Missing required wallet fields' });
+      }
+      
+      // Check if the user exists
+      const userExists = await db.select().from(users).where(eq(users.id, user_id));
+      if (userExists.length === 0) {
+        res.status(404).json({ error: 'User not found' });
+      }
+      
+      // Check if wallet_address already exists
+      const existingWalletAddress = await db.select().from(wallets).where(eq(wallets.wallet_address, wallet_address));
+      if (existingWalletAddress.length > 0) {
+        res.status(409).json({ error: 'Wallet address already exists' });
+      }
+      
+      // Check if public_address already exists
+      const existingPublicAddress = await db.select().from(wallets).where(eq(wallets.public_address, public_address));
+      if (existingPublicAddress.length > 0) {
+        res.status(409).json({ error: 'Public address already exists' });
+      }
+      
+      // Insert new wallet record
+      const newWallet = await db.insert(wallets).values({
+        user_id,
+        wallet_address,
+        public_address,
+        wallet_type
+      }).returning();
+      
+      res.status(201).json(newWallet[0]);
     } catch (err) {
-        handleQueryError(err, res);
+      handleQueryError(err, res);
     }
-});
+  });
 
 
 // GET: Retrieve user wallet public address by userId

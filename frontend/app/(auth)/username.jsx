@@ -98,19 +98,18 @@ export default function CreateUsernameScreen() {
       <View style={baseStyles.header}>
         <Image
           source={require('../../assets/lion.png')}
-          style={{ position: 'absolute', right: 0, width: 40, height: 40 }}
+          style={{ position: 'absolute', right: 10, width: 60, height: 60, resizeMode: 'contain' }}
         />
       </View>
      
       <Text style={baseStyles.title}>Create your @username</Text>
-      <Text style={styles.subtitle}>This will be your unique identifier on Sher</Text>
      
       <View style={baseStyles.form}>
-        <View style={baseStyles.inputContainer}>
+        <View style={styles.inputContainer}>
           <Text style={styles.atSymbol}>@</Text>
           <TextInput
             style={[baseStyles.input, styles.usernameInput]}
-            placeholder="username"
+            placeholder="Type username"
             placeholderTextColor="#999"
             value={username}
             onChangeText={setUsername}
@@ -123,7 +122,7 @@ export default function CreateUsernameScreen() {
         {error ? <Text style={styles.errorText}>{error}</Text> : null}
         
         <Text style={styles.hint}>
-          You can use letters, numbers, and underscores. Minimum 3 characters.
+          You can use letters, numbers, and underscores.
         </Text>
        
         <View style={{ flex: 1 }} />
@@ -145,6 +144,16 @@ export default function CreateUsernameScreen() {
 };
 
 const styles = StyleSheet.create({
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.gray,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: colors.white, // Ensure background is not transparent
+  },
   subtitle: {
     color: colors.gray,
     fontSize: 16,

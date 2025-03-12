@@ -48,7 +48,51 @@ const api = {
     }
   },
   
+  // Get user by email
+  getUserByEmail: async (email) => {
+    try {
+      const response = await apiClient.get(`users/email/${email}`);
+      return response.data;
+    } catch (error) {
+      console.error('API Error - getUserByEmail:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+  
+  // Wallet endpoints
+  addWallet: async (walletData) => {
+    try {
+      console.log('Adding wallet with data:', JSON.stringify(walletData));
+      
+      // Make sure we're sending the exact fields expected by the schema
+      const cleanedData = {
+        user_id: walletData.user_id,
+        wallet_address: walletData.wallet_address,
+        public_address: walletData.public_address,
+        wallet_type: walletData.wallet_type
+      };
+      
+      const response = await apiClient.post('/wallets', cleanedData);
+      return response.data;
+    } catch (error) {
+      console.error('API Error - addWallet:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+  
+  // Get wallets for a user
+  getUserWallets: async (userId) => {
+    try {
+      const response = await apiClient.get(`/wallets/user/${userId}`);
+      return response.data;
+    } catch (error) {
+      console.error('API Error - getUserWallets:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+  
   // Other API methods can be added here as needed
+
 };
 
 export default api;
