@@ -3,6 +3,7 @@ import { Pool } from 'pg';
 import { and, eq } from 'drizzle-orm';
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { users, wallets, friends, referrals, feedbacks } from './db/schema';
+import bcrypt from 'bcrypt';
 
 const router = Router();
 const pool = new Pool({ connectionString: `${process.env.DATABASE_URL}`, ssl: { rejectUnauthorized: false } });
@@ -14,15 +15,66 @@ const handleQueryError = (err: any, res: Response) => {
     res.status(500).json({ error: 'An error occurred while executing the query.' });
 };
 
-// POST: Add a new user
+
+// POST: Create a new user
 router.post('/users', async (req: Request, res: Response) => {
     try {
-        const newUser = await db.insert(users).values(req.body).returning();
-        res.status(201).json(newUser);
+      const { email, username, password_hash } = req.body;
+      
+      // Check if email already exists
+      const existingEmail = await db.select().from(users).where(eq(users.email, email));
+      if (existingEmail.length > 0) {
+        res.status(409).json({ error: 'Email already exists' });
+      }
+      
+      // Check if username already exists
+      const existingUsername = await db.select().from(users).where(eq(users.username, username));
+      if (existingUsername.length > 0) {
+        res.status(409).json({ error: 'Username already exists' });
+      }
+      
+      // Hash password if provided
+      let hashedPassword = password_hash;
+      if (password_hash && !password_hash.startsWith('$2b$')) {
+        // If it's not already hashed
+        hashedPassword = await bcrypt.hash(password_hash, 10);
+      }
+      
+      // Create new user
+      const newUser = await db.insert(users).values({
+        email,
+        username,
+        password_hash: hashedPassword || '', // Use empty string if not provided
+        // Note: created_at will use the defaultNow() from the schema
+      }).returning();
+      
+      // Return the user without password
+      const { password_hash: _, ...userWithoutPassword } = newUser[0];
+      res.status(201).json(userWithoutPassword);
     } catch (err) {
-        handleQueryError(err, res);
+      handleQueryError(err, res);
     }
-});
+  });
+
+  
+  // GET: Check if username exists
+  router.get('/users/username/:username', async (req: Request, res: Response) => {
+    try {
+      const { username } = req.params;
+      const existingUser = await db.select({
+        id: users.id,
+        username: users.username
+      }).from(users).where(eq(users.username, username));
+      
+      if (existingUser.length === 0) {
+        res.status(404).json({ error: 'Username not found' });
+      }
+      
+      res.status(200).json(existingUser[0]);
+    } catch (err) {
+      handleQueryError(err, res);
+    }
+  });
 
 // GET: Retrieve user details by userId  
 router.get('/users/:id', async (req: Request, res: Response) => {
@@ -66,6 +118,39 @@ router.get('/users/:username/user-id', async (req: Request, res: Response) => {
     }
 });
 
+
+// POST: Add a new wallet for a user
+router.post('/wallets', async (req: Request, res: Response) => {
+    try {
+        const { user_id, wallet_address, public_address, wallet_type } = req.body;
+
+        // Check if the user exists
+        const userExists = await db.select().from(users).where(eq(users.id, user_id));
+        if (userExists.length === 0) {
+            res.status(404).json({ error: 'User not found' });
+        }
+
+        // Check if wallet_address or public_address already exists
+        const existingWallet = await db.select().from(wallets).where(
+            and(eq(wallets.wallet_address, wallet_address), eq(wallets.public_address, public_address))
+        );
+        if (existingWallet.length > 0) {
+            res.status(409).json({ error: 'Wallet address or public address already exists' });
+        }
+
+        // Insert new wallet record
+        const newWallet = await db.insert(wallets).values({
+            user_id,
+            wallet_address,
+            public_address,
+            wallet_type
+        }).returning();
+
+        res.status(201).json(newWallet[0]);
+    } catch (err) {
+        handleQueryError(err, res);
+    }
+});
 
 
 // GET: Retrieve user wallet public address by userId

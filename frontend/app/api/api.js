@@ -1,61 +1,54 @@
 import axios from 'axios';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL;
+// Base URL - replace with your actual backend URL
+// In development, this might be your local IP with the port
+// For example: 'http://192.168.1.100:5050'
+// In production, this would be your deployed backend URL
+const BASE_URL = 'http://10.0.2.2:5050';
 
-const api = axios.create({
-    baseURL: API_URL,
-    headers: {
-        'Content-Type': 'application/json',
-    },
+// Create an axios instance with default config
+const apiClient = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 });
 
-// Function to add a new user
-export const addUser = async (userData) => {
+// API methods
+const api = {
+  // User endpoints
+  addUser: async (userData) => {
     try {
-        const response = await api.post('/users', userData);
-        return response.data;
+      // Log the data being sent to help with debugging
+      console.log('Adding user with data:', JSON.stringify(userData));
+      
+      // Make sure we're sending the exact fields expected by the schema
+      const cleanedData = {
+        username: userData.username,
+        email: userData.email,
+        password_hash: userData.password_hash
+      };
+      
+      const response = await apiClient.post('users', cleanedData);
+      return response.data;
     } catch (error) {
-        console.error('Error adding user:', error);
-        throw error;
+      console.error('API Error - addUser:', error.response?.data || error.message);
+      throw error;
     }
+  },
+  
+  // Check if username exists
+  getUser: async (username) => {
+    try {
+      const response = await apiClient.get(`users/username/${username}`);
+      return response.data;
+    } catch (error) {
+      console.error('API Error - getUser:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+  
+  // Other API methods can be added here as needed
 };
 
-// Function to get user details by username
-export const getUser = async (username) => {
-    try {
-        const response = await api.get(`/users/${username}`);
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching user:', error);
-        throw error;
-    }
-};
-
-// Function to get all friends of a user by username
-export const getFriends = async (username) => {
-    try {
-        const response = await api.get(`/friends/${username}`);
-        return response.data;
-    } catch (error) {
-        console.error('Error fetching friends:', error);
-        throw error;
-    }
-};
-
-// Function to add a friend for a user
-export const addFriend = async (username, friendUsername) => {
-    try {
-        const response = await api.post('/friends', { username, friendUsername });
-        return response.data;
-    } catch (error) {
-        console.error('Error adding friend:', error);
-        throw error;
-    }
-};
-
-export default {
-    addUser,
-    getUser,
-    getFriends,
-    addFriend,
-};
+export default api;

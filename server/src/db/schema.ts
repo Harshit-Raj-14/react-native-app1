@@ -22,6 +22,14 @@ export const wallets = pgTable('wallets', {
   created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
+// Friends Table
+export const friends = pgTable('friends', {
+  id: serial('id').primaryKey(),
+  user_id: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  friend_id: integer('friend_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
+});
+
 // Wallet Balances Table
 export const walletBalances = pgTable('wallet_balances', {
   id: serial('id').primaryKey(),
@@ -31,14 +39,6 @@ export const walletBalances = pgTable('wallet_balances', {
   token_balance: decimal('token_balance').notNull(),
   price_per_token: decimal('price_per_token').notNull(),
   last_updated: timestamp('last_updated', { withTimezone: true }),
-});
-
-// Friends Table
-export const friends = pgTable('friends', {
-  id: serial('id').primaryKey(),
-  user_id: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  friend_id: integer('friend_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  created_at: timestamp('created_at', { withTimezone: true }).defaultNow(),
 });
 
 // Referrals Table

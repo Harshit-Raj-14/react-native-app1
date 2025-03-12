@@ -10,6 +10,7 @@ import {
   Pressable,
   Animated,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -54,10 +55,22 @@ export default function Signup() {
       return;
     }
     
+    // Basic validation
+    if (!emailAddress.trim()) {
+      setError('Email is required');
+      return;
+    }
+    
+    if (!password.trim() || password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+    
     setError('');
     setIsSubmitting(true);
     
     try {
+      // Create the user with Clerk
       await signUp.create({
         emailAddress,
         password,
@@ -91,6 +104,8 @@ export default function Signup() {
       // If verification was complete, set session active and redirect
       if (signUpAttempt.status === 'complete') {
         await setActive({ session: signUpAttempt.createdSessionId });
+        
+        // After successful verification, redirect to username creation page
         router.replace('./username');
       } else {
         setError('Verification failed. Please try again.');
@@ -146,6 +161,7 @@ export default function Signup() {
             onPress={async () => {
               try {
                 await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+                Alert.alert('Code Sent', 'A new verification code has been sent to your email.');
               } catch (err) {
                 setError('Failed to resend code. Please try again.');
               }
