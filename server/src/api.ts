@@ -234,17 +234,19 @@ router.get('/users/:id/friends', async (req: Request, res: Response) => {
 
 
 // GET: Retrieve the receiver's public address after validating friendship
-router.get('/users/:senderId/friends/:receiverUsername/public-address', async (req: Request, res: Response) => {
+router.get('/users/:senderId/friends/:receiverUsername/public-address', async (req: Request, res: Response): Promise<void> => {
     try {
         const senderId = parseInt(req.params.senderId);
-        const receiverUsername = req.params.receiverUsername;
+        const receiverUsername = req.params.receiverUsername.toLowerCase();
 
         if (isNaN(senderId)) {
             res.status(400).json({ error: 'Invalid senderId' });
+            return;
         }
 
         if (!receiverUsername) {
             res.status(400).json({ error: 'Receiver username is required' });
+            return;
         }
 
         // Fetch receiver's user ID from username
@@ -255,6 +257,7 @@ router.get('/users/:senderId/friends/:receiverUsername/public-address', async (r
 
         if (!receiver.length) {
             res.status(404).json({ error: 'Receiver not found' });
+            return;
         }
 
         const receiverId = receiver[0].id;
@@ -267,6 +270,7 @@ router.get('/users/:senderId/friends/:receiverUsername/public-address', async (r
 
         if (!friendship.length) {
             res.status(404).json({ error: 'Friendship not found' });
+            return;
         }
 
         // Fetch the receiver's wallet public address
@@ -277,6 +281,7 @@ router.get('/users/:senderId/friends/:receiverUsername/public-address', async (r
 
         if (!receiverWallet.length) {
             res.status(404).json({ error: 'Receiver wallet not found' });
+            return;
         }
 
         // Return the receiver's public address
@@ -287,6 +292,8 @@ router.get('/users/:senderId/friends/:receiverUsername/public-address', async (r
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+
+
 
 
 
