@@ -23,7 +23,6 @@ export default function Home() {
         <Text>Hello {user?.emailAddresses[0].emailAddress}</Text>
         {/* <Button title="Username" onPress={() => router.push('../../(auth)/username')} /> */}
         <Button title="Wallet" onPress={() => router.push('../../(auth)/wallet')} />
-        <Button title="Wallet2" onPress={() => router.push('../../(auth)/walletin')} />
         <Button title="Sign out" onPress={onSignOutPress} />
       </SignedIn>
       <SignedOut>

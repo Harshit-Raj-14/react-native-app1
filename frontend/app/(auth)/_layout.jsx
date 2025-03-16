@@ -8,7 +8,6 @@ const Layout = () => {
       <Stack.Screen name="sign-in" options={{ headerShown: false }} />
       <Stack.Screen name="username" options={{ headerShown: false }} />
       <Stack.Screen name="wallet" options={{ headerShown: false }} />
-      <Stack.Screen name="walletin" options={{ headerShown: false }} />
     </Stack>
   );
 };
